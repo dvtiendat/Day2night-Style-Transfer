@@ -2,13 +2,14 @@ import torch
 import torch.nn as nn
 from torch.nn import init 
 import albumentations as A
+from albumentations import ToTensorV2
 import yaml 
 import numpy as np
 
 def get_transform():
     return A.Compose([
         A.Resize(height=256, width=256),
-        A.ToTensorV2()
+        ToTensorV2()
     ],
     additional_targets={'image0': 'image'}
     )

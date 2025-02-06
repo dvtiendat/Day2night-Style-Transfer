@@ -3,6 +3,6 @@ root_ukiyo: '/kaggle/input/ukiyoface/ukiyoe-1024'
 device: 'cuda'
 batch_size: 4
 learning_rate: 2e-4
-num_epochs: 10
+num_epochs: 50
 lambda_identity: 0
 lambda_cycle: 10
