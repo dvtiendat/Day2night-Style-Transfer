@@ -102,8 +102,8 @@ def main():
     optimizer_g = optim.Adam(list(G_A.parameters()) + list(G_B.parameters()), lr=float(config['learning_rate']), betas=(0.5, 0.999))
     L1 = nn.L1Loss()
     mse = nn.MSELoss()
-
-    dataset = FaceCycleGANDataset(root_face=config['root_face'], root_ukiyo=config['root_ukiyo'], transform=get_transform())
+    transforms = get_transform()
+    dataset = FaceCycleGANDataset(root_face=config['root_face'], root_ukiyo=config['root_ukiyo'], transform=transforms)
     dataloader = DataLoader(dataset, batch_size=config['batch_size'], shuffle=True)
     g_scaler = torch.cuda.amp.GradScaler()
     d_scaler = torch.cuda.amp.GradScaler()

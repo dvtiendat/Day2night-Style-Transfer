@@ -11,7 +11,8 @@ def get_transform():
         A.Resize(height=256, width=256),
         ToTensorV2()
     ],
-    additional_targets={'image0': 'image'}
+    additional_targets={'image0': 'image'},
+    is_check_shapes=False
     )
 
 def init_weights(net, init_type='normal', init_gain=0.02):
