@@ -11,7 +11,7 @@ from dataset.dataset import FaceCycleGANDataset
 import yaml
 import numpy as np
 import tqdm
-config_path = 'utils\config.yaml'
+config_path = '/kaggle/working/Ukiyo-e-style-transfer/utils/config.yaml'
 
 set_seed()
 config = load_config(config_path)
