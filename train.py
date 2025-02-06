@@ -10,7 +10,7 @@ from utils.helper import *
 from dataset.dataset import FaceCycleGANDataset
 import yaml
 import numpy as np
-import tqdm
+from tqdm import tqdm
 config_path = '/kaggle/working/Ukiyo-e-style-transfer/utils/config.yaml'
 
 set_seed()
@@ -105,8 +105,8 @@ def main():
 
     dataset = FaceCycleGANDataset(root_face=config['root_face'], root_ukiyo=config['root_ukiyo'], transform=get_transform())
     dataloader = DataLoader(dataset, batch_size=config['batch_size'], shuffle=True)
-    g_scaler = torch.cuda.amp.GradScaler()
-    d_scaler = torch.cuda.amp.GradScaler()
+    g_scaler = torch.amp.GradScaler('cuda')
+    d_scaler = torch.amp.GradScaler('cuda')
 
     for epoch in range(config['num_epochs']):
         train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler, mse, L1, dataloader, epoch)
