@@ -89,8 +89,8 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
             'G_loss': f'{g_loss.item():.4f}'})
         
         if idx % 200 == 0:
-            save_image(fake_face, f"saved_images/face_{idx}.png")
-            save_image(fake_ukiyo * 0.5 + 0.5, f"saved_images/ukiyo_{idx}.png")
+            save_image(fake_face, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/face_{idx}.png")
+            save_image(fake_ukiyo * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/ukiyo_{idx}.png")
             
 def main():
     D_A = Discriminator(in_channels=3).to(config['device'])
