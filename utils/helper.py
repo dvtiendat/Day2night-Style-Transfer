@@ -1,6 +1,17 @@
 import torch
 import torch.nn as nn
 from torch.nn import init 
+import albumentations as A
+import yaml 
+import numpy as np
+
+def get_transform():
+    return A.Compose([
+        A.Resize(height=256, width=256),
+        A.ToTensorV2()
+    ],
+    additional_targets={'image0': 'image'}
+    )
 
 def init_weights(net, init_type='normal', init_gain=0.02):
     '''
@@ -36,3 +47,12 @@ def init_weights(net, init_type='normal', init_gain=0.02):
     print(f'Initialize network using {init_type} initialization')
     net.apply(init_func)
 
+def load_config(config_path):
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    return config
+
+def set_seed(seed=42):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)

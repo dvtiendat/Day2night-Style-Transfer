@@ -81,6 +81,3 @@ class Generator(nn.Module):
 
         return x
 
-x = torch.randn((1, 3, 256, 256))
-gen = Generator(in_channels=3, features=64)
-print(gen(x).shape)

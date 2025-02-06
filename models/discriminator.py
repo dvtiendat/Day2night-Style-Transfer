@@ -40,8 +40,3 @@ class Discriminator(nn.Module):
     def forward(self, x):
         x = self.init(x)
         return torch.sigmoid(self.model(x))
-    
-dummy = torch.randn((1, 3, 256, 256))
-model = Discriminator()
-pred = model(dummy)
-print(pred.shape)
