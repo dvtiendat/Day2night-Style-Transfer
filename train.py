@@ -29,7 +29,7 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
         ukiyo = ukiyo.type(torch.float32).to(config['device'])
         
         # Train Discriminator A and B #
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast('cuda'):
             fake_ukiyo = G_A(face) # face -> (G_A) -> ukiyo
             D_B_real = D_B(ukiyo) # Discriminator for real ukiyo face
             D_B_fake = D_B(fake_ukiyo.detach()) # Discriminator for fake ukiyo face 
@@ -51,7 +51,7 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
         d_scaler.step(optimizer_d)
         d_scaler.update()
 
-        with torch.cuda.amp.autocast():
+        with torch.amp.autocast('cuda'):
             # Generator loss: try to trick the discriminator into think the fake image is real
             D_B_fake = D_B(fake_ukiyo)
             D_A_fake = D_A(fake_face)
