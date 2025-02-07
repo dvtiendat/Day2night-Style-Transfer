@@ -6,3 +6,4 @@ learning_rate: 2e-4
 num_epochs: 10
 lambda_identity: 0
 lambda_cycle: 10
+load_checkpoint: True

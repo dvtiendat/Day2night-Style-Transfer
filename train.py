@@ -125,6 +125,13 @@ def main():
     L1 = nn.L1Loss()
     mse = nn.MSELoss()
     transforms = get_transform()
+
+    if config['load_checkpoint']:
+        load_checkpoint('/kaggle/input/g_a/pytorch/default/1/G_A.pth', G_A, optimizer_g, config['learning_rate'])
+        load_checkpoint('/kaggle/input/g_a/pytorch/default/1/G_B.pth', G_B, optimizer_g, config['learning_rate'])
+        load_checkpoint('/kaggle/input/g_a/pytorch/default/1/D_A.pth', D_A, optimizer_d, config['learning_rate'])
+        load_checkpoint('/kaggle/input/g_a/pytorch/default/1/D_B.pth', D_B, optimizer_d, config['learning_rate'])
+            
     dataset = FaceCycleGANDataset(root_face=config['root_face'], root_ukiyo=config['root_ukiyo'], transform=transforms)
     dataloader = DataLoader(dataset, batch_size=config['batch_size'], shuffle=True)
     g_scaler = torch.amp.GradScaler('cuda')
