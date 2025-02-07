@@ -8,11 +8,14 @@ from models.generator import Generator
 from models.discriminator import Discriminator
 from utils.helper import *
 from dataset.dataset import FaceCycleGANDataset
+from tensorboard import *
+
 import yaml
 import numpy as np
 from tqdm import tqdm
-config_path = '/kaggle/working/Ukiyo-e-style-transfer/utils/config.yaml'
 
+config_path = '/kaggle/working/Ukiyo-e-style-transfer/utils/config.yaml'
+writer = SummaryWriter('/kaggle/working/Ukiyo-e-style-transfer/runs/ukyio_face_cyclegan')
 set_seed()
 config = load_config(config_path)
 
@@ -25,21 +28,22 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
     
     progress = tqdm(dataloader, leave=True, desc=f'Epoch {epoch}')
     for idx, (face, ukiyo) in enumerate(progress):
+        step = epoch * len(dataloader) + idx
         face = face.type(torch.float32).to(config['device'])
         ukiyo = ukiyo.type(torch.float32).to(config['device'])
         
         # Train Discriminator A and B #
         with torch.amp.autocast('cuda'):
             fake_ukiyo = G_A(face) # face -> (G_A) -> ukiyo
-            D_B_real = D_B(ukiyo) # Discriminator for real ukiyo face
-            D_B_fake = D_B(fake_ukiyo.detach()) # Discriminator for fake ukiyo face 
+            D_B_real = D_B(ukiyo) # discriminate real ukiyo
+            D_B_fake = D_B(fake_ukiyo.detach()) # discriminate fake ukiyo
             D_B_real_loss = mse(D_B_real, torch.ones_like(D_B_real))
             D_B_fake_loss = mse(D_B_fake, torch.zeros_like(D_B_fake))
             D_B_loss = D_B_real_loss + D_B_fake_loss
 
             fake_face = G_B(ukiyo)
-            D_A_real = D_A(face) # Discriminator for real ukiyo face
-            D_A_fake = D_A(fake_face.detach()) # Discriminator for fake ukiyo face 
+            D_A_real = D_A(face) # discriminate real face
+            D_A_fake = D_A(fake_face.detach()) # discriminate fake face
             D_A_real_loss = mse(D_A_real, torch.ones_like(D_A_real))
             D_A_fake_loss = mse(D_A_fake, torch.zeros_like(D_A_fake))
             D_A_loss = D_A_real_loss + D_A_fake_loss
@@ -51,6 +55,7 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
         d_scaler.step(optimizer_d)
         d_scaler.update()
 
+        # Train Generator A and B #
         with torch.amp.autocast('cuda'):
             # Generator loss: try to trick the discriminator into think the fake image is real
             D_B_fake = D_B(fake_ukiyo)
@@ -60,7 +65,7 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
 
             # Cycle consistency loss: make sure the image after cycle is similar to the original image
             cycle_face = G_B(fake_ukiyo) # fake_ukiyo -> (G_B) -> face
-            cycle_ukiyo = G_A(fake_face) # fake_face -> (G_A)  -> ukiyo
+            cycle_ukiyo = G_A(fake_face) # fake_face -> (G_A) -> ukiyo
             cycle_face_loss = L1(face, cycle_face)
             cycle_ukiyo_loss = L1(ukiyo, cycle_ukiyo)
 
@@ -73,24 +78,42 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
             g_loss = (loss_G_A + loss_G_B) + \
                 config['lambda_cycle'] * (cycle_face_loss + cycle_ukiyo_loss) + \
                 config['lambda_identity'] * (identity_face_loss + identity_ukiyo_loss)
+
         optimizer_g.zero_grad()
         g_scaler.scale(g_loss).backward()
         g_scaler.step(optimizer_g)
         g_scaler.update()
+
+        log_losses(
+            writer,
+            D_loss.item(),
+            (loss_G_A + loss_G_B).item(),
+            (cycle_face_loss + cycle_ukiyo_loss).item(),
+            (identity_face_loss + identity_ukiyo_loss).item(),
+            step
+        )
+
+        if idx % 200 == 0:
+            log_images(
+            writer,
+            face[0].detach().cpu() * 0.5 + 0.5,
+            ukiyo[0].detach().cpu() * 0.5 + 0.5,
+            fake_face[0].detach().cpu() * 0.5 + 0.5,
+            fake_ukiyo[0].detach().cpu() * 0.5 + 0.5,
+            step
+            )
+            save_image(fake_face * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/face_{idx}.png")
+            save_image(fake_ukiyo * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/ukiyo_{idx}.png")
 
         running_d_loss += D_loss.item()
         running_g_loss += (loss_G_A + loss_G_B).item()
         running_cycle_loss += (cycle_face_loss + cycle_ukiyo_loss).item()
         running_identity_loss += (identity_face_loss + identity_ukiyo_loss).item()
 
-        # Update progress bar with current losses
         progress.set_postfix({
             'D_loss': f'{D_loss.item():.4f}',
-            'G_loss': f'{g_loss.item():.4f}'})
-        
-        if idx % 200 == 0:
-            save_image(fake_face * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/face_{idx}.png")
-            save_image(fake_ukiyo * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/ukiyo_{idx}.png")
+            'G_loss': f'{g_loss.item():.4f}'
+        })
             
 def main():
     D_A = Discriminator(in_channels=3).to(config['device'])
