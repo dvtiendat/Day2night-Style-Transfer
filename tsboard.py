@@ -1,5 +1,5 @@
 import tensorboard
-from tensorboard import SummaryWriter
+from torch.utils.tensorboard import SummaryWriter
 
 def log_losses(writer, d_loss, g_loss, cycle_loss, identity_loss, step):
     writer.add_scalar('Discriminator Loss', d_loss, global_step=step)
