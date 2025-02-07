@@ -73,7 +73,7 @@ def save_checkpoint(model, optimizer, path="/kaggle/working/Ukiyo-e-style-transf
     
 def load_checkpoint(checkpoint_file, model, optimizer, lr):
     print("Loading checkpoint...")
-    checkpoint = torch.load(checkpoint_file, map_location='cuda')
+    checkpoint = torch.load(checkpoint_file, map_location='cuda', weights_only=True)
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
 
