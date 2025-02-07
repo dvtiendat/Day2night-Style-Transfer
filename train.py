@@ -8,7 +8,7 @@ from models.generator import Generator
 from models.discriminator import Discriminator
 from utils.helper import *
 from dataset.dataset import FaceCycleGANDataset
-from tensorboard import *
+from tsboard import *
 
 import yaml
 import numpy as np
@@ -110,6 +110,11 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
         running_cycle_loss += (cycle_face_loss + cycle_ukiyo_loss).item()
         running_identity_loss += (identity_face_loss + identity_ukiyo_loss).item()
 
+        save_checkpoint(G_A, optimizer_g, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'G_A.pth')
+        save_checkpoint(G_B, optimizer_g, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'G_B.pth')
+        save_checkpoint(D_A, optimizer_d, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'D_A.pth') 
+        save_checkpoint(D_B, optimizer_d, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'D_B.pth')
+        
         progress.set_postfix({
             'D_loss': f'{D_loss.item():.4f}',
             'G_loss': f'{g_loss.item():.4f}'

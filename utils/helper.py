@@ -5,6 +5,7 @@ import albumentations as A
 from albumentations import ToTensorV2
 import yaml 
 import numpy as np
+import os 
 
 def get_transform():
     return A.Compose([
@@ -59,3 +60,22 @@ def set_seed(seed=42):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
+
+def save_checkpoint(model, optimizer, path="/kaggle/working/Ukiyo-e-style-transfer/checkpoints", filename="model.pth"):
+    if not os.path.exists(path):
+        os.makedirs(path)
+
+    checkpoint = {
+        'state_dict': model.state_dict(),
+        'optimizer': optimizer.state_dict()
+    }
+    torch.save(checkpoint, os.path.join(path, filename))
+    
+def load_checkpoint(checkpoint_file, model, optimizer, lr):
+    print("Loading checkpoint...")
+    checkpoint = torch.load(checkpoint_file, map_location='cuda')
+    model.load_state_dict(checkpoint["state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer"])
+
+    for param_group in optimizer.param_groups:
+        param_group["lr"] = lr
