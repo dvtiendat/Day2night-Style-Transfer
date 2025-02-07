@@ -2,16 +2,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
-from torchvision.utils import save_image
 from models.generator import Generator 
 from models.discriminator import Discriminator
 from utils.helper import *
 from dataset.dataset import FaceCycleGANDataset
 from tsboard import *
 
-import yaml
-import numpy as np
 from tqdm import tqdm
 
 config_path = '/kaggle/working/Ukiyo-e-style-transfer/utils/config.yaml'
@@ -93,7 +89,7 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
             step
         )
 
-        if idx % 200 == 0:
+        if idx == len(dataloader) - 1: 
             log_images(
             writer,
             face[0].detach().cpu() * 0.5 + 0.5,
@@ -102,8 +98,6 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
             fake_ukiyo[0].detach().cpu() * 0.5 + 0.5,
             step
             )
-            save_image(fake_face * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/face_{idx}.png")
-            save_image(fake_ukiyo * 0.5 + 0.5, f"/kaggle/working/Ukiyo-e-style-transfer/saved_img/ukiyo_{idx}.png")
 
         running_d_loss += D_loss.item()
         running_g_loss += (loss_G_A + loss_G_B).item()
@@ -114,7 +108,7 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
         save_checkpoint(G_B, optimizer_g, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'G_B.pth')
         save_checkpoint(D_A, optimizer_d, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'D_A.pth') 
         save_checkpoint(D_B, optimizer_d, '/kaggle/working/Ukiyo-e-style-transfer/checkpoints', 'D_B.pth')
-        
+
         progress.set_postfix({
             'D_loss': f'{D_loss.item():.4f}',
             'G_loss': f'{g_loss.item():.4f}'
