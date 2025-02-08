@@ -7,9 +7,9 @@ import yaml
 import numpy as np
 import os 
 
-def get_transform():
+def get_transform(img_size=256):
     return A.Compose([
-        A.Resize(height=256, width=256),
+        A.Resize(height=img_size, width=img_size),
         A.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255),
         ToTensorV2()
     ],
@@ -61,21 +61,24 @@ def set_seed(seed=42):
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
 
-def save_checkpoint(model, optimizer, path="/kaggle/working/Ukiyo-e-style-transfer/checkpoints", filename="model.pth"):
+def save_checkpoint(model, optimizer, epoch, path="/kaggle/working/Ukiyo-e-style-transfer/checkpoints", filename="model.pth"):
     if not os.path.exists(path):
         os.makedirs(path)
 
     checkpoint = {
         'state_dict': model.state_dict(),
-        'optimizer': optimizer.state_dict()
+        'optimizer': optimizer.state_dict(),
+        'epoch': epoch,
     }
     torch.save(checkpoint, os.path.join(path, filename))
     
 def load_checkpoint(checkpoint_file, model, optimizer, lr):
-    print("Loading checkpoint...")
+
     checkpoint = torch.load(checkpoint_file, map_location='cuda', weights_only=True)
     model.load_state_dict(checkpoint["state_dict"])
     optimizer.load_state_dict(checkpoint["optimizer"])
 
     for param_group in optimizer.param_groups:
         param_group["lr"] = lr
+    print(f"Checkpoint of model {model} loaded, resume training at epoch {checkpoint['epoch']}.")
+    return checkpoint.get('epoch', 0)

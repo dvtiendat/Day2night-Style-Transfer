@@ -1,9 +1,0 @@
-root_face: '/kaggle/input/ffhq256-images-only/ffhq256'
-root_ukiyo: '/kaggle/input/ukiyoface/ukiyoe-1024'
-device: 'cuda'
-batch_size: 16
-learning_rate: 2e-4
-num_epochs: 20
-lambda_identity: 0
-lambda_cycle: 10
-load_checkpoint: True
