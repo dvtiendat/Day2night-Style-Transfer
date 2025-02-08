@@ -16,7 +16,7 @@ class FaceCycleGANDataset(Dataset):
 
         self.face_images = os.listdir(root_face)
         self.ukiyo_images = os.listdir(root_ukiyo)
-        self.len = max(len(self.face_images), len(self.ukiyo_images))
+        self.len = min(len(self.face_images), len(self.ukiyo_images))
 
         self.face_len = len(self.face_images)
         self.ukiyo_len = len(self.ukiyo_images)
