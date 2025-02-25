@@ -173,7 +173,7 @@ def main():
 
     for epoch in range(start_epoch, config['num_epochs']):
         avg_d_loss, avg_g_loss, avg_cycle_loss, avg_identity_loss = train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler, mse, L1, dataloader, epoch)
-        print(f'Epoch {epoch} | D_loss: {avg_d_loss} | G_loss: {avg_g_loss} | Cycle loss: {avg_cycle_loss} | Identity loss: {avg_identity_loss}')
+        print(f'Epoch {epoch} | D_loss: {avg_d_loss:.4f} | G_loss: {avg_g_loss:.4f} | Cycle loss: {avg_cycle_loss:.4f} | Identity loss: {avg_identity_loss:.4f}')
 
 if __name__ == '__main__':
     args = get_args()
