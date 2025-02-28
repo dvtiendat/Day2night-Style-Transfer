@@ -8,35 +8,35 @@ from PIL import Image
 from utils.helper import *
 
 class FaceCycleGANDataset(Dataset):
-    def __init__(self, root_face, root_ukiyo, transform=None):
+    def __init__(self, root_day, root_night, transform=None):
         super().__init__()
-        self.root_face = root_face
-        self.root_ukiyo = root_ukiyo
+        self.root_day = root_day
+        self.root_night = root_night
         self.transform = transform
 
-        self.face_images = os.listdir(root_face)
-        self.ukiyo_images = os.listdir(root_ukiyo)
-        self.len = max(len(self.face_images), len(self.ukiyo_images))
+        self.day_images = os.listdir(root_day)
+        self.night_images = os.listdir(root_night)
+        self.len = max(len(self.day_images), len(self.night_images))
 
-        self.face_len = len(self.face_images)
-        self.ukiyo_len = len(self.ukiyo_images)
+        self.day_len = len(self.day_images)
+        self.night_len = len(self.night_images)
     
     def __len__(self):
         return self.len
     
     def __getitem__(self, idx):
-        face_img = self.face_images[idx % self.face_len]
-        ukiyo_img = self.ukiyo_images[idx % self.ukiyo_len]
+        day_img = self.day_images[idx % self.day_len]
+        night_img = self.night_images[idx % self.night_len]
 
-        face_path = os.path.join(self.root_face, face_img)
-        ukiyo_path = os.path.join(self.root_ukiyo, ukiyo_img)
+        day_path = os.path.join(self.root_day, day_img)
+        night_path = os.path.join(self.root_night, night_img)
 
-        face_img = np.array(Image.open(face_path).convert('RGB'))
-        ukiyo_img = np.array(Image.open(ukiyo_path).convert('RGB'))
+        day_img = np.array(Image.open(day_path).convert('RGB'))
+        night_img = np.array(Image.open(night_path).convert('RGB'))
 
         if self.transform:
-            augmentations = self.transform(image=face_img, image0=ukiyo_img)
-            face_img = augmentations['image']
-            ukiyo_img = augmentations['image0']
+            augmentations = self.transform(image=day_img, image0=night_img)
+            day_img = augmentations['image']
+            night_img = augmentations['image0']
 
-        return face_img, ukiyo_img
+        return day_img, night_img

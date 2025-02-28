@@ -10,11 +10,11 @@ from tsboard import *
 import argparse
 from tqdm import tqdm
 
-writer = SummaryWriter('/kaggle/working/Ukiyo-e-style-transfer/runs/ukyio_face_cyclegan')
+writer = SummaryWriter('/kaggle/working/Style-Transfer/runs/day2night')
 set_seed()
 
 def get_args():
-    parser = argparse.ArgumentParser(description='Train CycleGAN for face style transfer')
+    parser = argparse.ArgumentParser(description='Train CycleGAN for daylight style transfer')
     parser.add_argument('--batch_size', type=int, default=16,
                        help='batch size for training')
     parser.add_argument('--learning_rate', type=float, default=2e-4,
@@ -27,11 +27,11 @@ def get_args():
                        help='weight for identity loss')
     parser.add_argument('--img_size', type=int, default=256,
                        help='size of input images')
-    parser.add_argument('--root_face', type=str, required=True,
-                       help='directory path containing face images')
-    parser.add_argument('--root_ukiyo', type=str, required=True,
-                       help='directory path containing style images')
-    parser.add_argument('--checkpoint_dir', type=str, default='/kaggle/working/Ukiyo-e-style-transfer/checkpoints',
+    parser.add_argument('--root_day', type=str, required=True,
+                       help='directory path containing day images')
+    parser.add_argument('--root_night', type=str, required=True,
+                       help='directory path containing night images')
+    parser.add_argument('--checkpoint_dir', type=str, default='/kaggle/working/Style-Transfer/checkpoints',
                        help='directory path to save model checkpoints')
     parser.add_argument('--load_checkpoint', action='store_true', default=False,
                        help='load model from checkpoint')
@@ -40,7 +40,7 @@ def get_args():
                        help='device to use for training')
     return parser.parse_args()
 
-# A: humans face <-> B: ukiyo-e face # 
+# A: day <-> B: night # 
 def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler, mse, L1, dataloader, epoch):
     running_d_loss = 0.0
     running_g_loss = 0.0
@@ -48,23 +48,23 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
     running_identity_loss = 0.0
     
     progress = tqdm(dataloader, leave=True, desc=f'Epoch {epoch}')
-    for idx, (face, ukiyo) in enumerate(progress):
+    for idx, (day, night) in enumerate(progress):
         step = epoch * len(dataloader) + idx
-        face = face.type(torch.float32).to(config['device'])
-        ukiyo = ukiyo.type(torch.float32).to(config['device'])
+        day = day.type(torch.float32).to(config['device'])
+        night = night.type(torch.float32).to(config['device'])
         
         # Train Discriminator A and B #
         with torch.autocast('cuda'):
-            fake_ukiyo = G_A(face) # face -> (G_A) -> ukiyo
-            D_B_real = D_B(ukiyo) # discriminate real ukiyo
-            D_B_fake = D_B(fake_ukiyo.detach()) # discriminate fake ukiyo
+            fake_night = G_A(day) # day -> (G_A) -> night
+            D_B_real = D_B(night) # discriminate real night
+            D_B_fake = D_B(fake_night.detach()) # discriminate fake night
             D_B_real_loss = mse(D_B_real, torch.ones_like(D_B_real))
             D_B_fake_loss = mse(D_B_fake, torch.zeros_like(D_B_fake))
             D_B_loss = D_B_real_loss + D_B_fake_loss
 
-            fake_face = G_B(ukiyo)
-            D_A_real = D_A(face) # discriminate real face
-            D_A_fake = D_A(fake_face.detach()) # discriminate fake face
+            fake_day = G_B(night)
+            D_A_real = D_A(day) # discriminate real day
+            D_A_fake = D_A(fake_day.detach()) # discriminate fake day
             D_A_real_loss = mse(D_A_real, torch.ones_like(D_A_real))
             D_A_fake_loss = mse(D_A_fake, torch.zeros_like(D_A_fake))
             D_A_loss = D_A_real_loss + D_A_fake_loss
@@ -79,26 +79,26 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
         # Train Generator A and B #
         with torch.amp.autocast('cuda'):
             # Generator loss: try to trick the discriminator into think the fake image is real
-            D_B_fake = D_B(fake_ukiyo)
-            D_A_fake = D_A(fake_face)
+            D_B_fake = D_B(fake_night)
+            D_A_fake = D_A(fake_day)
             loss_G_B = mse(D_B_fake, torch.ones_like(D_B_fake)) 
             loss_G_A = mse(D_A_fake, torch.ones_like(D_A_fake))
 
             # Cycle consistency loss: make sure the image after cycle is similar to the original image
-            cycle_face = G_B(fake_ukiyo) # fake_ukiyo -> (G_B) -> face
-            cycle_ukiyo = G_A(fake_face) # fake_face -> (G_A) -> ukiyo
-            cycle_face_loss = L1(face, cycle_face)
-            cycle_ukiyo_loss = L1(ukiyo, cycle_ukiyo)
+            cycle_day = G_B(fake_night) # fake_night -> (G_B) -> day
+            cycle_night = G_A(fake_day) # fake_day -> (G_A) -> night
+            cycle_day_loss = L1(day, cycle_day)
+            cycle_night_loss = L1(night, cycle_night)
 
             # Identity loss: make sure the generator does not change the input image (gen ảnh từ ảnh gốc thì nó 0 đổi)
-            identity_face = G_B(face)
-            identity_ukiyo = G_A(ukiyo)
-            identity_face_loss = L1(face, identity_face)
-            identity_ukiyo_loss = L1(ukiyo, identity_ukiyo)
+            identity_day = G_B(day)
+            identity_night = G_A(night)
+            identity_day_loss = L1(day, identity_day)
+            identity_night_loss = L1(night, identity_night)
             
             g_loss = (loss_G_A + loss_G_B) + \
-                config['lambda_cycle'] * (cycle_face_loss + cycle_ukiyo_loss) + \
-                config['lambda_identity'] * (identity_face_loss + identity_ukiyo_loss)
+                config['lambda_cycle'] * (cycle_day_loss + cycle_night_loss) + \
+                config['lambda_identity'] * (identity_day_loss + identity_night_loss)
 
         optimizer_g.zero_grad()
         g_scaler.scale(g_loss).backward()
@@ -109,25 +109,25 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
             writer,
             D_loss.item(),
             (loss_G_A + loss_G_B).item(),
-            (cycle_face_loss + cycle_ukiyo_loss).item(),
-            (identity_face_loss + identity_ukiyo_loss).item(),
+            (cycle_day_loss + cycle_night_loss).item(),
+            (identity_day_loss + identity_night_loss).item(),
             step
         )
 
         if idx == len(dataloader) - 1: 
             log_images(
             writer,
-            face[0].detach().cpu() * 0.5 + 0.5,
-            ukiyo[0].detach().cpu() * 0.5 + 0.5,
-            fake_face[0].detach().cpu() * 0.5 + 0.5,
-            fake_ukiyo[0].detach().cpu() * 0.5 + 0.5,
+            day[0].detach().cpu() * 0.5 + 0.5,
+            night[0].detach().cpu() * 0.5 + 0.5,
+            fake_day[0].detach().cpu() * 0.5 + 0.5,
+            fake_night[0].detach().cpu() * 0.5 + 0.5,
             step
             )
 
         running_d_loss += D_loss.item()
         running_g_loss += (loss_G_A + loss_G_B).item()
-        running_cycle_loss += (cycle_face_loss + cycle_ukiyo_loss).item()
-        running_identity_loss += (identity_face_loss + identity_ukiyo_loss).item()
+        running_cycle_loss += (cycle_day_loss + cycle_night_loss).item()
+        running_identity_loss += (identity_day_loss + identity_night_loss).item()
 
         progress.set_postfix({
             'D_loss': f'{D_loss.item():.4f}',
@@ -166,7 +166,7 @@ def main():
         load_checkpoint('/kaggle/input/d_a/pytorch/default/1/D_A.pth', D_A, optimizer_d, float(config['learning_rate']))
         load_checkpoint('/kaggle/input/d_b/pytorch/default/1/D_B.pth', D_B, optimizer_d, float(config['learning_rate']))
             
-    dataset = FaceCycleGANDataset(root_face=config['root_face'], root_ukiyo=config['root_ukiyo'], transform=transforms)
+    dataset = FaceCycleGANDataset(root_day=config['root_day'], root_night=config['root_night'], transform=transforms)
     dataloader = DataLoader(dataset, batch_size=config['batch_size'], shuffle=True, num_workers=2)
     g_scaler = torch.amp.GradScaler('cuda')
     d_scaler = torch.amp.GradScaler('cuda')
