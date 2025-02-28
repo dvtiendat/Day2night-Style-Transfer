@@ -1,1 +1,1 @@
-python train.py 
+!python train.py --batch_size 16 --num_epochs 30 --root_day '/kaggle/input/dataset-embedded/dataset_embedded/daytime/train/images' --root_night '/kaggle/input/dataset-embedded/dataset_embedded/nighttime/train/images'

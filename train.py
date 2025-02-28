@@ -139,11 +139,23 @@ def train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler,
     avg_cycle_loss = running_cycle_loss / len(dataloader)
     avg_identity_loss = running_identity_loss / len(dataloader)
 
-    if epoch % 5 == 0 or epoch == config['num_epochs'] - 1:
-        save_checkpoint(G_A, optimizer_g, epoch, config['checkpoint_dir'], f'G_A_epoch_{epoch}.pth')
-        save_checkpoint(G_B, optimizer_g, epoch, config['checkpoint_dir'], f'G_B_epoch_{epoch}.pth')
-        save_checkpoint(D_A, optimizer_d, epoch, config['checkpoint_dir'], f'D_A_epoch_{epoch}.pth')
-        save_checkpoint(D_B, optimizer_d, epoch, config['checkpoint_dir'], f'D_B_epoch_{epoch}.pth')
+    if 'best_cycle_loss' not in globals():
+        global best_cycle_loss
+        best_cycle_loss = float('inf')
+
+    if avg_cycle_loss < best_cycle_loss:
+        best_cycle_loss = avg_cycle_loss
+        save_checkpoint(G_A, optimizer_g, epoch, config['checkpoint_dir'], 'G_A_best.pth')
+        save_checkpoint(G_B, optimizer_g, epoch, config['checkpoint_dir'], 'G_B_best.pth')
+        save_checkpoint(D_A, optimizer_d, epoch, config['checkpoint_dir'], 'D_A_best.pth')
+        save_checkpoint(D_B, optimizer_d, epoch, config['checkpoint_dir'], 'D_B_best.pth')
+
+    # Save the last epoch
+    if epoch == config['num_epochs'] - 1:
+        save_checkpoint(G_A, optimizer_g, epoch, config['checkpoint_dir'], 'G_A_last.pth')
+        save_checkpoint(G_B, optimizer_g, epoch, config['checkpoint_dir'], 'G_B_last.pth')
+        save_checkpoint(D_A, optimizer_d, epoch, config['checkpoint_dir'], 'D_A_last.pth')
+        save_checkpoint(D_B, optimizer_d, epoch, config['checkpoint_dir'], 'D_B_last.pth')
 
     return avg_d_loss, avg_g_loss, avg_cycle_loss, avg_identity_loss
             
@@ -171,9 +183,13 @@ def main():
     g_scaler = torch.amp.GradScaler('cuda')
     d_scaler = torch.amp.GradScaler('cuda')
 
-    for epoch in range(start_epoch, config['num_epochs']):
+    for epoch in range(start_epoch, start_epoch + config['num_epochs']):
         avg_d_loss, avg_g_loss, avg_cycle_loss, avg_identity_loss = train_loop(D_A, D_B, G_A, G_B, optimizer_d, optimizer_g, d_scaler, g_scaler, mse, L1, dataloader, epoch)
         print(f'Epoch {epoch} | D_loss: {avg_d_loss:.4f} | G_loss: {avg_g_loss:.4f} | Cycle loss: {avg_cycle_loss:.4f} | Identity loss: {avg_identity_loss:.4f}')
+
+        if avg_cycle_loss == best_cycle_loss:
+            print(f'New best cycle loss: {best_cycle_loss:.4f}, best checkpoint saved')
+
 
 if __name__ == '__main__':
     args = get_args()
