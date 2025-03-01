@@ -173,10 +173,10 @@ def main():
 
     start_epoch = 0
     if config['load_checkpoint']:
-        start_epoch = load_checkpoint('/kaggle/input/g_a/pytorch/default/1/G_A.pth', G_A, optimizer_g, float(config['learning_rate']))
-        load_checkpoint('/kaggle/input/g_b/pytorch/default/1/G_B.pth', G_B, optimizer_g, float(config['learning_rate']))
-        load_checkpoint('/kaggle/input/d_a/pytorch/default/1/D_A.pth', D_A, optimizer_d, float(config['learning_rate']))
-        load_checkpoint('/kaggle/input/d_b/pytorch/default/1/D_B.pth', D_B, optimizer_d, float(config['learning_rate']))
+        start_epoch = load_checkpoint('/kaggle/input/g_a/pytorch/default/1/G_A_last.pth', G_A, optimizer_g, float(config['learning_rate']))
+        load_checkpoint('/kaggle/input/g_b/pytorch/default/1/G_B_last.pth', G_B, optimizer_g, float(config['learning_rate']))
+        load_checkpoint('/kaggle/input/d_a/pytorch/default/1/D_A_last.pth', D_A, optimizer_d, float(config['learning_rate']))
+        load_checkpoint('/kaggle/input/d_b/pytorch/default/1/D_B_last.pth', D_B, optimizer_d, float(config['learning_rate']))
             
     dataset = FaceCycleGANDataset(root_day=config['root_day'], root_night=config['root_night'], transform=transforms)
     dataloader = DataLoader(dataset, batch_size=config['batch_size'], shuffle=True, num_workers=2)
